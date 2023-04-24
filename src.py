@@ -1,17 +1,17 @@
 #username - simonovsky1
 #id1      - 322721705
 #name1    - Daniella Simonovsky
-#id2      - complete info
-#name2    - complete info  
+#id2      - 322430661
+#name2    - Noam Shtrahman
 
 
 
 """A class represnting a node in an AVL tree"""
 
-class AVLNode(object):99
+class AVLNode(object):
 	"""Constructor, you are allowed to add more fields. 
 	
-	@type key: int or None
+	@param key: int or None
 	@param key: key of your node
 	@type value: any
 	@param value: data of your node
@@ -24,7 +24,7 @@ class AVLNode(object):99
 		self.parent = None
 		self.height = -1
 		self.size = 0
-		
+		self.bf = 0
 
 	"""returns the key
 
@@ -32,16 +32,15 @@ class AVLNode(object):99
 	@returns: the key of self, None if the node is virtual
 	"""
 	def get_key(self):
-		return None
+		return self.key
 
 
 	"""returns the value
-
 	@rtype: any
 	@returns: the value of self, None if the node is virtual
 	"""
 	def get_value(self):
-		return None
+		return self.value
 
 
 	"""returns the left child
@@ -49,7 +48,7 @@ class AVLNode(object):99
 	@returns: the left child of self, None if there is no left child (if self is virtual)
 	"""
 	def get_left(self):
-		return None
+		return self.left
 
 
 	"""returns the right child
@@ -58,7 +57,7 @@ class AVLNode(object):99
 	@returns: the right child of self, None if there is no right child (if self is virtual)
 	"""
 	def get_right(self):
-		return None
+		return self.right
 
 
 	"""returns the parent 
@@ -67,7 +66,7 @@ class AVLNode(object):99
 	@returns: the parent of self, None if there is no parent
 	"""
 	def get_parent(self):
-		return None
+		return self.parent
 
 
 	"""returns the height
@@ -76,7 +75,7 @@ class AVLNode(object):99
 	@returns: the height of self, -1 if the node is virtual
 	"""
 	def get_height(self):
-		return -1
+		return self.hight
 
 
 	"""returns the size of the subtree
@@ -85,7 +84,7 @@ class AVLNode(object):99
 	@returns: the size of the subtree of self, 0 if the node is virtual
 	"""
 	def get_size(self):
-		return 0
+		return self.size
 
 
 	"""sets key
@@ -94,6 +93,7 @@ class AVLNode(object):99
 	@param key: key
 	"""
 	def set_key(self, key):
+		self.key = key
 		return None
 
 
@@ -103,6 +103,7 @@ class AVLNode(object):99
 	@param value: data
 	"""
 	def set_value(self, value):
+		self.value = value
 		return None
 
 
@@ -112,6 +113,7 @@ class AVLNode(object):99
 	@param node: a node
 	"""
 	def set_left(self, node):
+		self.left = node
 		return None
 
 
@@ -121,6 +123,7 @@ class AVLNode(object):99
 	@param node: a node
 	"""
 	def set_right(self, node):
+		self.right = node
 		return None
 
 
@@ -130,6 +133,7 @@ class AVLNode(object):99
 	@param node: a node
 	"""
 	def set_parent(self, node):
+		self.parent = node
 		return None
 
 
@@ -139,6 +143,7 @@ class AVLNode(object):99
 	@param h: the height
 	"""
 	def set_height(self, h):
+		self.height = h
 		return None
 
 
@@ -148,6 +153,7 @@ class AVLNode(object):99
 	@param s: the size
 	"""
 	def set_size(self, s):
+		self.size = s
 		return None
 
 
@@ -157,9 +163,16 @@ class AVLNode(object):99
 	@returns: False if self is a virtual node, True otherwise.
 	"""
 	def is_real_node(self):
-		return False
+		return self.key is not None
 
 
+	def get_bf(self):
+		return self.bf
+
+
+	def set_bf(self, *args):
+		#self.bf = self.get_left().get_height() - self.get_right().get_height()
+		return args[0]
 
 """
 A class implementing an AVL tree.
@@ -168,12 +181,13 @@ A class implementing an AVL tree.
 class AVLTree(object):
 
 	"""
-	Constructor, you are allowed to add more fields.  
+	Constructor, you are allowed to add more fields.
 
 	"""
 	def __init__(self):
-		self.root = None
-		# add your fields here
+		self.root = AVLNode()
+		self.size = self.root.size
+		self.height = self.root.height
 
 
 
@@ -185,7 +199,16 @@ class AVLTree(object):
 	@returns: the value corresponding to key.
 	"""
 	def search(self, key):
-		return None
+		curr = self
+		while curr.key != key:
+			if curr.left is None and curr.right is None:
+				return None
+			elif curr.key < key:
+				curr = curr.right
+			else:
+				curr = curr.left
+		return curr.value
+
 
 
 	"""inserts val at position i in the dictionary
@@ -199,8 +222,43 @@ class AVLTree(object):
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
 	def insert(self, key, val):
+		cnt = 0
+		curr, prev_height = self.helper(key, val)
+		prev = curr.get_parent()
+		while prev.is_real_node():
+			bf = prev.get_bf()
+			if 2 > bf > -2 and prev_height == prev.get_height():
+				return cnt
+			elif 2 > bf > -2:
+				curr = curr.get_parent()
+				prev = prev.get_parent()
+			else:
+				#rotaion
+				curr = curr.get_parent()
+				prev = prev.get_parent()
+
 		return -1
 
+
+	def helper(self, key, val):
+		curr = self.get_root()
+		prev = curr
+		while curr.is_real_node():
+			if curr.get_key < key:
+				curr = curr.get_right()
+			else:
+				curr = curr.get_left()
+
+			prev = curr.get_parent()
+			if prev.get_left().get_key() == curr.get_key():
+				prev.set_bf(prev.get_bf() + 1)
+			else:
+				prev.set_bf(prev.get_bf() - 1)
+		prev_height = prev.get_height()
+
+		curr.set_key(key)
+		curr.set_value(val)
+		return curr, prev_height
 
 	"""deletes node from the dictionary
 
@@ -219,7 +277,18 @@ class AVLTree(object):
 	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
 	def avl_to_array(self):
-		return None
+		res = []
+		return self.get_root().in_order(res)
+
+
+	def in_order(self, arr):
+		if self.get_left().get_key() is not None:
+			self.get_left().in_order(arr)
+		if self.get_key() is not None:
+			arr.append((self.get_key(), self.get_value()))
+		if self.get_right().get_key() is not None:
+			self.get_right.in_order(arr)
+		return arr
 
 
 	"""returns the number of items in dictionary 
@@ -228,9 +297,9 @@ class AVLTree(object):
 	@returns: the number of items in dictionary 
 	"""
 	def size(self):
-		return self.get_root().get_size()	
+		return self.get_root().get_size()
 
-	
+
 	"""splits the dictionary at a given node
 
 	@type node: AVLNode
@@ -244,7 +313,7 @@ class AVLTree(object):
 	def split(self, node):
 		return None
 
-	
+
 	"""joins self with key and another AVLTree
 
 	@type tree: AVLTree 
