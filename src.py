@@ -36,6 +36,7 @@ class AVLNode(object):
 
 
 	"""returns the value
+	
 	@rtype: any
 	@returns: the value of self, None if the node is virtual
 	"""
@@ -44,6 +45,7 @@ class AVLNode(object):
 
 
 	"""returns the left child
+	
 	@rtype: AVLNode
 	@returns: the left child of self, None if there is no left child (if self is virtual)
 	"""
@@ -52,7 +54,7 @@ class AVLNode(object):
 
 
 	"""returns the right child
-
+	
 	@rtype: AVLNode
 	@returns: the right child of self, None if there is no right child (if self is virtual)
 	"""
@@ -70,12 +72,12 @@ class AVLNode(object):
 
 
 	"""returns the height
-
+	
 	@rtype: int
 	@returns: the height of self, -1 if the node is virtual
 	"""
 	def get_height(self):
-		return self.hight
+		return self.height
 
 
 	"""returns the size of the subtree
@@ -165,14 +167,22 @@ class AVLNode(object):
 	def is_real_node(self):
 		return self.key is not None
 
+	"""returns the balance factor of a node
 
+		@rtype: int
+		@returns: the balance factor of a node #think about what to do if a node is virtual
+		"""
 	def get_bf(self):
 		return self.bf
 
 
+	"""sets balance factor for node
+
+		@type s: int
+		@param s: the balance factor
+		"""
 	def set_bf(self, *args):
-		#self.bf = self.get_left().get_height() - self.get_right().get_height()
-		return args[0]
+		return self.get_left().get_height() - self.get_right().get_height()
 
 """
 A class implementing an AVL tree.
@@ -184,8 +194,8 @@ class AVLTree(object):
 	Constructor, you are allowed to add more fields.
 
 	"""
-	def __init__(self):
-		self.root = AVLNode()
+	def __init__(self, root):
+		self.root = root
 		self.size = self.root.size
 		self.height = self.root.height
 
@@ -259,6 +269,45 @@ class AVLTree(object):
 		curr.set_key(key)
 		curr.set_value(val)
 		return curr, prev_height
+
+
+
+	"""function rotates the tree in the non-clockwise direction
+	@type node: AVLNode
+	@param node: the inserted node before rotation
+	@rtype: AVLNode
+	@returns: rotated nodes in new order
+	"""
+	def left_rotation(self, node):
+		right = node.get_right()
+		right_left = right.get_left()
+		right.set_left(node)
+		node.set_right(right_left)
+		max_height = max(node.get_left().get_height(), right_left.get_height())
+		max_right_height = max(node.get_height(), right.get_right().get_height())
+		node.set_height(1 + max_height)
+		right.set_height(1 + max_right_height)
+		return right
+
+	"""function rotates the tree in the clockwise direction
+		@type node: AVLNode
+		@param node: the inserted node before rotation
+		@rtype: AVLNode
+		@returns: rotated nodes in new order
+		"""
+
+	def right_rotation(self, node):
+		left = node.get_left()
+		left_right = left.get_right()
+		left.set_right(node)
+		node.set_left(left_right)
+		max_height = max(node.get_right().get_height(), left_right.get_height())
+		max_right_height = max(left.get_left().get_height(), node.get_height())
+		node.set_height(1 + max_height)
+		left.set_height(1 + max_right_height)
+		return left
+
+
 
 	"""deletes node from the dictionary
 
