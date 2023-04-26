@@ -182,7 +182,9 @@ class AVLNode(object):
 		@param s: the balance factor
 		"""
 	def set_bf(self, *args):
-		return self.get_left().get_height() - self.get_right().get_height()
+		self.bf = self.get_left().get_height() - self.get_right().get_height()
+		return None
+
 
 """
 A class implementing an AVL tree.
@@ -194,11 +196,12 @@ class AVLTree(object):
 	Constructor, you are allowed to add more fields.
 
 	"""
-	def __init__(self, root):
-		self.root = root
-		self.size = self.root.size
-		self.height = self.root.height
-
+	def __init__(self):
+		self.root = None
+		
+		
+	def get_root(self):
+		return self.root
 
 
 	"""searches for a value in the dictionary corresponding to the key
@@ -231,44 +234,58 @@ class AVLTree(object):
 	@rtype: int
 	@returns: the number of rebalancing operation due to AVL rebalancing
 	"""
+
 	def insert(self, key, val):
-		cnt = 0
-		curr, prev_height = self.helper(key, val)
-		prev = curr.get_parent()
-		while prev.is_real_node():
-			bf = prev.get_bf()
-			if 2 > bf > -2 and prev_height == prev.get_height():
-				return cnt
-			elif 2 > bf > -2:
-				curr = curr.get_parent()
-				prev = prev.get_parent()
+		def rotator(node, prev_height, cnt):
+			bf = node.get_bf
+
+			if 2 > bf > -2 and node.get_height == prev_height:
+				return node
+
+			elif 2 > bf > -2:  # check bf with node's parent
+				node = node.get_parent
+				rotator(node, node.get_height, cnt)  # not really sure how it should work
+
+			else:  # preform rotations maybe will need to change it a bit
+				if bf == -2:
+					if node.get_right.get_bf == -1:  # left rotation
+						node = node.left_rotation()
+						cnt += 1
+					else:  # right_left rotation
+						right_node = node.right_rotation()
+						node = node.left_rotaion()
+						cnt += 2
+				else:  # bf = 2
+					if node.get_left.get_bf == 1:
+						node = node.right_rotation(node)
+						cnt += 1
+					else:
+						left_node = node.left_rotation()
+						node = node.right_rotation(node)
+						cnt += 2
+				# as written in slide 36 - check bf with node's parent
+				node = node.get_parent
+				rotator(node, node.get_height, cnt)
+			return cnt
+
+		def helper(node, key, value, cnt):
+			prev_height = node.get_height
+
+			if not node.is_real_node:
+				return 0, AVLNode(key, value)
+			elif key < node.get_key:
+				node.set_left = helper(node.get_left, key, val, cnt)
 			else:
-				#rotaion
-				curr = curr.get_parent()
-				prev = prev.get_parent()
+				node.set_right = helper(node.get_right, key, val, cnt)
 
-		return -1
+			max_height = max(node.get_left.get_height, node.get_right.get_height)
+			node.set_height = 1 + max_height
 
+			cnt += rotator(node, prev_height, cnt)
+			return cnt, node
 
-	def helper(self, key, val):
-		curr = self.get_root()
-		prev = curr
-		while curr.is_real_node():
-			if curr.get_key < key:
-				curr = curr.get_right()
-			else:
-				curr = curr.get_left()
-
-			prev = curr.get_parent()
-			if prev.get_left().get_key() == curr.get_key():
-				prev.set_bf(prev.get_bf() + 1)
-			else:
-				prev.set_bf(prev.get_bf() - 1)
-		prev_height = prev.get_height()
-
-		curr.set_key(key)
-		curr.set_value(val)
-		return curr, prev_height
+		cnt, self.root = helper(self.root, key, val, 0)
+		return None
 
 
 
@@ -326,18 +343,13 @@ class AVLTree(object):
 	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
 	def avl_to_array(self):
-		res = []
-		return self.get_root().in_order(res)
+		def inorder_rec(node):
+			if not node.is_real_node:
+				return []
+			return inorder_rec(node.get_left) + [node.get_key] + inorder_rec(node.get_right)
 
+		inorder_rec(self.get_root())
 
-	def in_order(self, arr):
-		if self.get_left().get_key() is not None:
-			self.get_left().in_order(arr)
-		if self.get_key() is not None:
-			arr.append((self.get_key(), self.get_value()))
-		if self.get_right().get_key() is not None:
-			self.get_right.in_order(arr)
-		return arr
 
 
 	"""returns the number of items in dictionary 
