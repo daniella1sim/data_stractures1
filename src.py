@@ -257,11 +257,11 @@ class AVLTree(object):
 						cnt += 2
 				else:  # bf = 2
 					if node.get_left.get_bf == 1:
-						node = node.right_rotation(node)
+						node = node.right_rotation()
 						cnt += 1
 					else:
 						left_node = node.left_rotation()
-						node = node.right_rotation(node)
+						node = node.right_rotation()
 						cnt += 2
 				# as written in slide 36 - check bf with node's parent
 				node = node.get_parent
@@ -284,8 +284,8 @@ class AVLTree(object):
 			cnt += rotator(node, prev_height, cnt)
 			return cnt, node
 
-		cnt, self.root = helper(self.root, key, val, 0)
-		return None
+		cnt, self.root = helper(self.root, key, val, -1)
+		return cnt
 
 
 
