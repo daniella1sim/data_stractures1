@@ -3,10 +3,10 @@
 # name1    - Daniella Simonovsky
 # id2      - 322430661
 # name2    - Noam Shtrahman
-import printTree
-from printTree import *
 
 """A class represnting a node in an AVL tree"""
+from PrintTreeUtil import *
+import random
 
 
 class AVLNode(object):
@@ -247,6 +247,8 @@ class AVLTree(object):
     def insert_as_usual(self, node):
         curr = self.get_root()
         parent = None
+        prev_height = 0
+
         while curr is not None:
             parent = curr
             prev_height = parent.get_height()
@@ -256,8 +258,8 @@ class AVLTree(object):
                 curr = curr.get_right()
 
         node.set_parent(parent)
-        node.set_size(1)
-        node.set_height(0)
+        self.reset_size(node)
+        self.reset_height(node)
 
         if parent is None:
             self.set_root(node)
@@ -270,18 +272,8 @@ class AVLTree(object):
             parent.set_right(node)
             node.set_parent(parent)
 
-
-        if parent.get_left() is None and parent.get_right() is None:
-            height = 0
-        elif parent.get_left() is None:
-            height = parent.get_right().get_height() + 1
-        elif parent.get_right() is None:
-            height = parent.get_left().get_height() + 1
-        else:
-            height = max(parent.get_left().get_height(), parent.get_right().get_height()) + 1
-
-        parent.set_height(height)
-        parent.set_size(parent.get_size() + 1)
+        self.reset_height(parent)
+        self.reset_size(parent)
 
         return parent.get_height() - prev_height
 
@@ -300,33 +292,32 @@ class AVLTree(object):
             elif 2 > bf > -2 and delta_height != 0:
                 parent = parent.get_parent()
                 if parent is None:
-                    continue
+                    break
                 prev_height = parent.get_height()
-                height = max(parent.get_left().get_height(), parent.get_right().get_height()) + 1
-                parent.set_height(height)
+                self.reset_height(parent)
                 delta_height = parent.get_height() - prev_height
-                parent.set_size(parent.get_size() + 1)
+                self.reset_size(parent)
 
             else:  # preform rotations
                 if bf == -2:
-                    if node.get_right().get_bf() == -1:  # left rotation
-                        node = node.left_rotation()
+                    if parent.get_right().get_bf() == -1:  # left rotation
+                        parent = self.left_rotation(parent)
                         count += 1
                     else:  # right_left rotation
-                        right_node = node.right_rotation()
-                        node = right_node.left_rotaion()
+                        right_node = self.right_rotation(parent)
+                        parent = self.left_rotation(right_node)
                         count += 2
                 else:  # bf = 2
-                    if node.get_left().get_bf() == 1:
-                        node = node.right_rotation()
+                    if parent.get_left().get_bf() == 1:
+                        parent = self.right_rotation(parent)
                         count += 1
                     else:
-                        left_node = node.left_rotation()
-                        node = left_node.right_rotation()
+                        left_node = self.left_rotation(parent)
+                        parent = self.right_rotation(left_node)
                         count += 2
-
                 parent = parent.get_parent()
-                parent.set_size(parent.get_size() + 1)
+                if parent is not None:
+                    self.reset_size(parent)
 
         return count
 
@@ -340,14 +331,33 @@ class AVLTree(object):
 	"""
 
     def left_rotation(self, node):
+        parent = node.get_parent()
+
         right = node.get_right()
         right_left = right.get_left()
         right.set_left(node)
         node.set_right(right_left)
-        max_height = max(node.get_left().get_height(), right_left.get_height())
-        max_right_height = max(node.get_height(), right.get_right().get_height())
-        node.set_height(1 + max_height)
-        right.set_height(1 + max_right_height)
+
+        node.set_parent(right)
+        right.set_parent(parent)
+
+        if right_left is not None:
+            right_left.set_parent(node)
+        if parent is not None:
+            if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
+                parent.set_right(right)
+            elif parent.get_left() is not None and parent.get_left().get_key() == node.get_key():
+                parent.set_left(right)
+            else:
+                print("error parent left")
+        self.reset_height(node)
+        self.reset_height(right)
+
+        self.reset_size(node)
+        self.reset_size(right)
+
+        node.set_bf()
+        right.set_bf()
         return right
 
     """function rotates the tree in the clockwise direction
@@ -358,28 +368,68 @@ class AVLTree(object):
 		"""
 
     def right_rotation(self, node):
+        parent = node.get_parent()
         left = node.get_left()
         left_right = left.get_right()
+
         left.set_right(node)
         node.set_left(left_right)
+        node.set_parent(left)
+        left.set_parent(parent)
 
-        max_height = max(node.get_right().get_height(), left_right.get_height())
-        max_right_height = max(left.get_left().get_height(), node.get_height())
-        node.set_height(1 + max_height)
-        left.set_height(1 + max_right_height)
+        if left_right is not None:
+            left_right.set_parent(node)
+        if parent is not None:
+            if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
+                parent.set_right(left)
+            elif parent.get_left() is not None and parent.get_left().get_key() == node.get_key():
+                parent.set_left(left)
+            else:
+                print("error parent right")
 
-        node.set_size(node.get_right().get_size() + node.get_left().get_size() + 1)
-        left.set_size(node.get_size() + left.get_left().get_size() + 1)
+        self.reset_height(node)
+        self.reset_height(left)
+
+        self.reset_size(node)
+        self.reset_size(left)
+
+        node.set_bf()
+        node.set_bf()
 
         return left
 
-    """deletes node from the dictionary
+    def reset_size(self, node):
+        if node.get_left() is None and node.get_right() is None:
+            node.set_size(1)
+        elif node.get_right() is None:
+            node.set_size(node.get_left().get_size() + 1)
+        elif node.get_left() is None:
+            node.set_size(node.get_right().get_size() + 1)
+        else:
+            size = node.get_left().get_size() + node.get_right().get_size() + 1
+            node.set_size(size)
 
-	@type node: AVLNode
-	@pre: node is a real pointer to a node in self
-	@rtype: int
-	@returns: the number of rebalancing operation due to AVL rebalancing
-	"""
+        return None
+
+    def reset_height(self, node):
+        if node.get_left() is None and node.get_right() is None:
+            node.set_height(0)
+        elif node.get_right() is None:
+            node.set_height(node.get_left().get_height() + 1)
+        elif node.get_left() is None:
+            node.set_height(node.get_right().get_height() + 1)
+        else:
+            height = max(node.get_left().get_height(), node.get_right().get_height()) + 1
+            node.set_height(height)
+
+        return None
+
+    """deletes node from the dictionary
+    @type node: AVLNode
+    @pre: node is a real pointer to a node in self
+    @rtype: int
+    @returns: the number of rebalancing operation due to AVL rebalancing
+    """
 
     def delete(self, node):
         curr = self.root
@@ -645,15 +695,11 @@ class AVLTree(object):
         return out
 
 
+
 def main():
     tree = AVLTree()
-    tree.insert(10, 10)
-    tree.insert(12, 12)
-    tree.insert(8, 8)
-    tree.insert(5, 5)
-    tree.insert(20, 20)
-    tree.insert(9, 9)
-    tree.insert(11, 11)
+    for i in range(50):
+        tree.insert(i,i)
     print(tree)
 
 
