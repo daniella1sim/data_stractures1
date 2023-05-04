@@ -24,8 +24,8 @@ class AVLNode(object):
         self.left = None
         self.right = None
         self.parent = None
-        self.height = -1
-        self.size = 0
+        self.height = 0
+        self.size = 1
         self.bf = 0
 
     """returns the key
@@ -251,15 +251,15 @@ class AVLTree(object):
 
         while curr is not None:
             parent = curr
-            prev_height = parent.get_height()
             if node.get_key() < curr.get_key():
                 curr = curr.get_left()
             else:
                 curr = curr.get_right()
 
+        if parent is not None:
+            prev_height = parent.get_height()
+
         node.set_parent(parent)
-        self.reset_size(node)
-        self.reset_height(node)
 
         if parent is None:
             self.set_root(node)
@@ -282,21 +282,25 @@ class AVLTree(object):
         node = AVLNode(key, val)
         delta_height = self.insert_as_usual(node)
         parent = node.get_parent()
-        while parent is not None:
+        if parent is not None:
             parent.set_bf()
             bf = parent.get_bf()
+
+        while parent is not None:
+
 
             if 2 > bf > -2 and delta_height == 0:
                 return count
 
             elif 2 > bf > -2 and delta_height != 0:
-                parent = parent.get_parent()
-                if parent is None:
-                    break
                 prev_height = parent.get_height()
                 self.reset_height(parent)
                 delta_height = parent.get_height() - prev_height
                 self.reset_size(parent)
+                if parent is not None:
+                    parent.set_bf()
+                    bf = parent.get_bf()
+                continue
 
             else:  # preform rotations
                 if bf == -2:
@@ -315,9 +319,12 @@ class AVLTree(object):
                         left_node = self.left_rotation(parent)
                         parent = self.right_rotation(left_node)
                         count += 2
+
                 parent = parent.get_parent()
                 if parent is not None:
                     self.reset_size(parent)
+                    parent.set_bf()
+                    bf = parent.get_bf()
 
         return count
 
@@ -695,11 +702,12 @@ class AVLTree(object):
         return out
 
 
-
 def main():
     tree = AVLTree()
-    for i in range(50):
-        tree.insert(i,i)
+    tree.insert(6, 6)
+    tree.insert(7,7)
+    tree.insert(8,8)
+
     print(tree)
 
 
