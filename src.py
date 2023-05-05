@@ -38,7 +38,7 @@ class AVLNode(object):
         return self.key
 
     """returns the value
-	
+
 	@rtype: any
 	@returns: the value of self, None if the node is virtual
 	"""
@@ -47,7 +47,7 @@ class AVLNode(object):
         return self.value
 
     """returns the left child
-	
+
 	@rtype: AVLNode
 	@returns: the left child of self, None if there is no left child (if self is virtual)
 	"""
@@ -56,7 +56,7 @@ class AVLNode(object):
         return self.left
 
     """returns the right child
-	
+
 	@rtype: AVLNode
 	@returns: the right child of self, None if there is no right child (if self is virtual)
 	"""
@@ -74,7 +74,7 @@ class AVLNode(object):
         return self.parent
 
     """returns the height
-	
+
 	@rtype: int
 	@returns: the height of self, -1 if the node is virtual
 	"""
@@ -223,15 +223,15 @@ class AVLTree(object):
 	"""
 
     def search(self, key):
-        curr = self
-        while curr.key != key:
-            if curr.left is None and curr.right is None:
+        node = self.get_root()
+        while node.get_key() != key:
+            if node.get_left() is None and node.get_right() is None:
                 return None
-            elif curr.key < key:
-                curr = curr.right
+            elif node.get_key() < key:
+                node = node.get_right()
             else:
-                curr = curr.left
-        return curr.value
+                node = node.get_left()
+        return node.get_value()
 
     """inserts val at position i in the dictionary
 
@@ -282,25 +282,15 @@ class AVLTree(object):
         node = AVLNode(key, val)
         delta_height = self.insert_as_usual(node)
         parent = node.get_parent()
-        if parent is not None:
-            parent.set_bf()
-            bf = parent.get_bf()
 
         while parent is not None:
-
+            parent.set_bf()
+            bf = parent.get_bf()
+            self.reset_size(parent)
 
             if 2 > bf > -2 and delta_height == 0:
+                self.recursive_reset(parent)
                 return count
-
-            elif 2 > bf > -2 and delta_height != 0:
-                prev_height = parent.get_height()
-                self.reset_height(parent)
-                delta_height = parent.get_height() - prev_height
-                self.reset_size(parent)
-                if parent is not None:
-                    parent.set_bf()
-                    bf = parent.get_bf()
-                continue
 
             else:  # preform rotations
                 if bf == -2:
@@ -308,28 +298,27 @@ class AVLTree(object):
                         parent = self.left_rotation(parent)
                         count += 1
                     else:  # right_left rotation
-                        right_node = self.right_rotation(parent)
-                        parent = self.left_rotation(right_node)
+                        parent = self.right_left_rotation(parent)
                         count += 2
-                else:  # bf = 2
+                elif bf == 2:  # bf = 2
                     if parent.get_left().get_bf() == 1:
                         parent = self.right_rotation(parent)
                         count += 1
                     else:
-                        left_node = self.left_rotation(parent)
-                        parent = self.right_rotation(left_node)
+                        parent = self.left_right_rotation(parent)
                         count += 2
 
-                parent = parent.get_parent()
-                if parent is not None:
-                    self.reset_size(parent)
-                    parent.set_bf()
-                    bf = parent.get_bf()
+            parent = parent.get_parent()
+            if parent is None:
+                break
+            prev_height = parent.get_height()
+            self.reset_height(parent)
+            delta_height = parent.get_height() - prev_height
+
 
         return count
 
     """
-
 	function rotates the tree in the non-clockwise direction
 	@type node: AVLNode
 	@param node: the inserted node before rotation
@@ -353,18 +342,18 @@ class AVLTree(object):
         if parent is not None:
             if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
                 parent.set_right(right)
-            elif parent.get_left() is not None and parent.get_left().get_key() == node.get_key():
-                parent.set_left(right)
             else:
-                print("error parent left")
+                parent.set_left(right)
+        else:
+            self.set_root(right)
+
         self.reset_height(node)
         self.reset_height(right)
-
         self.reset_size(node)
         self.reset_size(right)
-
         node.set_bf()
         right.set_bf()
+
         return right
 
     """function rotates the tree in the clockwise direction
@@ -389,21 +378,99 @@ class AVLTree(object):
         if parent is not None:
             if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
                 parent.set_right(left)
-            elif parent.get_left() is not None and parent.get_left().get_key() == node.get_key():
-                parent.set_left(left)
             else:
-                print("error parent right")
+                parent.set_left(left)
+        else:
+            self.set_root(left)
 
         self.reset_height(node)
         self.reset_height(left)
-
         self.reset_size(node)
         self.reset_size(left)
-
         node.set_bf()
-        node.set_bf()
+        left.set_bf()
 
         return left
+
+    def left_right_rotation(self, node):
+        parent = node.get_parent()
+        left = node.get_left()  # a
+        left_right = left.get_right()  # b
+        left_right_right = left_right.get_right()  # br
+        left_right_left = left_right.get_left()  # bl
+
+        left_right.set_parent(parent)
+        left_right.set_right(node)
+        node.set_parent(left_right)
+        node.set_left(left_right_left)
+        if left_right_left is not None:
+            left_right_left.set_parent(node)
+
+        left_right.set_left(left)
+        left.set_parent(left_right)
+        left.set_right(left_right_right)
+        if left_right_left is not None:
+            left_right_left.set_parent(left)
+
+        if parent is not None:
+            if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
+                parent.set_right(left_right)
+            else:
+                parent.set_left(left_right)
+        else:
+            self.set_root(left_right)
+
+        self.reset_height(node)
+        self.reset_height(left)
+        self.reset_height(left_right)
+        self.reset_size(node)
+        self.reset_size(left)
+        self.reset_size(left_right)
+        node.set_bf()
+        left.set_bf()
+        left_right.set_bf()
+
+        return left_right
+
+    def right_left_rotation(self, node):
+        parent = node.get_parent()
+        right = node.get_right()
+        right_left = right.get_left()
+        right_left_right = right_left.get_right()
+        right_left_left = right_left.get_left()
+
+        right_left.set_parent(parent)
+        right_left.set_left(node)
+        node.set_parent(right_left)
+        node.set_right(right_left_right)
+        if right_left_right is not None:
+            right_left_right.set_parent(node)
+
+        right_left.set_right(right)
+        right.set_parent(right_left)
+        right.set_left(right_left_left)
+        if right_left_left is not None:
+            right_left_left.set_parent(right)
+
+        if parent is not None:
+            if parent.get_right() is not None and parent.get_right().get_key() == node.get_key():
+                parent.set_right(right_left)
+            else:
+                parent.set_left(right_left)
+        else:
+            self.set_root(right_left)
+
+        self.reset_height(node)
+        self.reset_height(right)
+        self.reset_height(right_left)
+        self.reset_size(node)
+        self.reset_size(right)
+        self.reset_size(right_left)
+        node.set_bf()
+        right.set_bf()
+        right_left.set_bf()
+
+        return right_left
 
     def reset_size(self, node):
         if node.get_left() is None and node.get_right() is None:
@@ -430,6 +497,12 @@ class AVLTree(object):
             node.set_height(height)
 
         return None
+
+    def recursive_reset(self,node):
+        while node is not None:
+            self.reset_height(node)
+            self.reset_size(node)
+            node = node.get_parent()
 
     """deletes node from the dictionary
     @type node: AVLNode
@@ -507,16 +580,16 @@ class AVLTree(object):
 
     def succsessor(self, node):
         res = node
-        if self.is_real_node(res.get_right):
-            res = node.get_right
-            while self.is_real_node(res):
-                res = res.get_left
+        if res.get_right().is_real_node():
+            res = node.get_right()
+            while res.is_real_node():
+                res = res.get_left()
             return res
         else:
-            res = node.get_parent
-            while not self.is_real_node(res.get_right):
-                res = res.get_parent
-            return res.get_right
+            res = node.get_parent()
+            while not res.get_right().is_real_node():
+                res = res.get_parent()
+            return res.get_right()
 
     """returns an array representing dictionary 
 
@@ -526,9 +599,9 @@ class AVLTree(object):
 
     def avl_to_array(self):
         def inorder_rec(node):
-            if not node.is_real_node:
+            if not node.is_real_node():
                 return []
-            return inorder_rec(node.get_left) + [node.get_key] + inorder_rec(node.get_right)
+            return inorder_rec(node.get_left()) + [node.get_key()] + inorder_rec(node.get_right())
 
         inorder_rec(self.get_root())
 
@@ -561,10 +634,10 @@ class AVLTree(object):
         left_tree = AVLTree().set_root(node.left)
         right_tree = AVLTree().set_root(node.right)
         while node is not None:
-            if node.get_parent.get_left == node:
-                right_tree.join(AVLTree(node.get_parent.get_right), node.get_parent.get_key, node.get_parent.get_value)
+            if node.get_parent().get_left() == node:
+                right_tree.join(AVLTree(node.get_parent().get_right()), node.get_parent().get_key(), node.get_parent().get_value())
             else:
-                left_tree.join(AVLTree(node.get_parent.get_left), node.get_parent.get_key, node.get_parent.get_value)
+                left_tree.join(AVLTree(node.get_parent().get_left()), node.get_parent().get_key(), node.get_parent().get_value())
 
         return [left_tree, right_tree]
 
@@ -587,58 +660,58 @@ class AVLTree(object):
         self_is_shorter = True
         self_is_smaller = True
         short = 0
-        if self.get_root().get_key > key:
+        if self.get_root().get_key() > key:
             self_is_smaller = False
-        if self.get_root.get_height <= tree.get_root.get_height:
-            short = self.get_root.get_height
+        if self.get_root().get_height() <= tree.get_root().get_height():
+            short = self.get_root().get_height()
         else:
-            short = tree.get_root.get_height
+            short = tree.get_root().get_height()
             self_is_shorter = False
 
         if self_is_shorter and self_is_smaller:
-            min_in_tree = tree.get_root
-            while min_in_tree.get_height != short:
-                min_in_tree = min_in_tree.get_left
+            min_in_tree = tree.get_root()
+            while min_in_tree.get_height() != short:
+                min_in_tree = min_in_tree.get_left()
 
-            parent = min_in_tree.get_parent
+            parent = min_in_tree.get_parent()
             node.set_left(self.get_root())
             node.set_right(min_in_tree)
             parent.set_left(node)
 
         if self_is_shorter and not self_is_smaller:
-            max_of_tree = tree.get_root
-            while max_of_tree.get_height != short:
-                max_of_tree = max_of_tree.get_right
+            max_of_tree = tree.get_root()
+            while max_of_tree.get_height() != short:
+                max_of_tree = max_of_tree.get_right()
 
-            parent = max_of_tree.get_parent
+            parent = max_of_tree.get_parent()
             node.set_right(self.get_root())
             node.set_left(max_of_tree)
             parent.set_right(node)
 
         if not self_is_shorter and self_is_smaller:
-            max_of_self = self.get_root
+            max_of_self = self.get_root()
             while max_of_self.get_height != short:
-                max_of_self = max_of_self.get_right
+                max_of_self = max_of_self.get_right()
 
-            parent = max_of_self.get_parent
+            parent = max_of_self.get_parent()
             node.set_right(tree.get_root())
             node.set_left(max_of_self)
             parent.set_right(node)
 
         if not self_is_shorter and not self_is_smaller:
-            min_in_self = self.get_root
-            while min_in_self.get_height != short:
-                min_in_self = min_in_self.get_left
+            min_in_self = self.get_root()
+            while min_in_self.get_height() != short:
+                min_in_self = min_in_self.get_left()
 
-            parent = min_in_self.get_parent
+            parent = min_in_self.get_parent()
             node.set_left(tree.get_root())
             node.set_right(min_in_self)
             parent.set_left(node)
 
         if self_is_shorter:
-            return tree.get_root.get_height - self.get_root().get_height
+            return tree.get_root().get_height() - self.get_root().get_height()
         else:
-            return self.get_root.get_height() - tree.get_root().get_height
+            return self.get_root().get_height() - tree.get_root().get_height()
 
     """compute the rank of node in the self
 
@@ -650,12 +723,15 @@ class AVLTree(object):
 	"""
 
     def rank(self, node):
-        r = node.get_left.get_size + 1
+        if node.get_left() is None:
+            r = 1
+        else:
+            r = node.get_left().get_size() + 1
         curr = node
-        while curr is not None:
-            if curr == curr.get_parent.get_right:
-                r = r + curr.get_parent.get_left.get_size + 1
-            curr = curr.get_parent
+        while curr.get_parent() is not None:
+            if curr == curr.get_parent().get_right():
+                r = r + curr.get_parent().get_left().get_size() + 1
+            curr = curr.get_parent()
         return r
 
     """finds the i'th smallest item (according to keys) in self
@@ -668,18 +744,25 @@ class AVLTree(object):
 	"""
 
     def select(self, i):
-        node = self.get_root()
+        root = self.get_root()
 
         def select_rec(node, i):
-            rank = node.get_left.get_size + 1
-            if rank == i:
+            if node is None:
+                return None
+
+            if node.get_left() is None:
+                curr_rank = 1
+            else:
+                curr_rank = node.get_left().get_size() + 1
+
+            if i == curr_rank:
                 return node
-            elif rank > i:
+            elif i < curr_rank:
                 return select_rec(node.get_left(), i)
             else:
-                return select_rec(node.get_right(), i - rank)
+                return select_rec(node.get_right(), i - curr_rank)
 
-        select_rec(node, i)
+        return select_rec(root, i)
 
     """returns the root of the tree representing the dictionary
 
@@ -704,11 +787,11 @@ class AVLTree(object):
 
 def main():
     tree = AVLTree()
-    tree.insert(6, 6)
-    tree.insert(7,7)
-    tree.insert(8,8)
+    for i in range(100):
+        tree.insert(i, i)
 
-    print(tree)
+    for i in range(100):
+        print(tree.select(i+1).get_key())
 
 
 main()
