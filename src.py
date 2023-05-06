@@ -502,6 +502,7 @@ class AVLTree(object):
         while node is not None:
             self.reset_height(node)
             self.reset_size(node)
+            node.set_bf()
             node = node.get_parent()
 
     """deletes node from the dictionary
@@ -655,61 +656,120 @@ class AVLTree(object):
 
     def join(self, tree, key, val):
         node = AVLNode(key, val)
+        root = self.get_root()
         self_is_shorter = True
         self_is_smaller = True
-        short = 0
-        if self.get_root().get_key() > key:
+        if root.get_key() > key:
             self_is_smaller = False
-        if self.get_root().get_height() <= tree.get_root().get_height():
-            short = self.get_root().get_height()
-        else:
-            short = tree.get_root().get_height()
+
+        if root.get_height() == tree.get_root().get_height():
+            self.set_root(node)
+            if self_is_smaller:
+                node.set_left(root)
+                root.set_parent(node)
+                node.set_right(tree.get_root())
+                tree.get_root().set_parent(node)
+
+            else:
+                node.set_right(root)
+                root.set_parent(node)
+                node.set_left(tree.get_root())
+                tree.get_root().set_parent(node)
+
+            self.reset_height(node)
+            self.reset_size(node)
+            node.set_bf()
+
+            return 0
+
+        min_height = min(root.get_height(), tree.get_root().get_height())
+        if root.get_height() > min_height:
             self_is_shorter = False
 
         if self_is_shorter and self_is_smaller:
-            min_in_tree = tree.get_root()
-            while min_in_tree.get_height() != short:
-                min_in_tree = min_in_tree.get_left()
+            min_tree = tree.get_root()
+            while min_tree.get_height() != min_height:
+                min_tree = min_tree.get_left()
 
-            parent = min_in_tree.get_parent()
-            node.set_left(self.get_root())
-            node.set_right(min_in_tree)
+            parent = min_tree.get_parent()
+
+            node.set_left(root)
+            root.set_parent(node)
+            node.set_right(min_tree)
+            min_tree.set_parent(node)
             parent.set_left(node)
+            node.set_parent(parent)
+            self.set_root(tree.get_root())
+            self.recursive_reset(node)
 
         if self_is_shorter and not self_is_smaller:
-            max_of_tree = tree.get_root()
-            while max_of_tree.get_height() != short:
-                max_of_tree = max_of_tree.get_right()
+            max_tree = tree.get_root()
+            while max_tree.get_height() != min_height:
+                max_tree = max_tree.get_right()
 
-            parent = max_of_tree.get_parent()
-            node.set_right(self.get_root())
-            node.set_left(max_of_tree)
+            parent = max_tree.get_parent()
+            node.set_right(root)
+            root.set_parent(node)
+            node.set_left(max_tree)
+            max_tree.set_parent(node)
             parent.set_right(node)
+            node.set_parent(parent)
+            self.set_root(tree.get_root())
+            self.recursive_reset(node)
 
         if not self_is_shorter and self_is_smaller:
-            max_of_self = self.get_root()
-            while max_of_self.get_height != short:
-                max_of_self = max_of_self.get_right()
+            max_self = root
+            while max_self.get_height(8) != min_height:
+                max_self = max_self.get_right()
 
-            parent = max_of_self.get_parent()
+            parent = max_self.get_parent()
             node.set_right(tree.get_root())
-            node.set_left(max_of_self)
+            tree.get_root().set_parent(node)
+            node.set_left(max_self)
+            max_self.set_parent(node)
             parent.set_right(node)
+            node.set_parent(parent)
+            self.recursive_reset(node)
 
         if not self_is_shorter and not self_is_smaller:
-            min_in_self = self.get_root()
-            while min_in_self.get_height() != short:
-                min_in_self = min_in_self.get_left()
+            min_self = root
+            while min_self.get_height() != min_height:
+                min_self = min_self.get_left()
 
-            parent = min_in_self.get_parent()
+            parent = min_self.get_parent()
             node.set_left(tree.get_root())
-            node.set_right(min_in_self)
+            tree.get_root().set_parent(node)
+            node.set_right(min_self)
+            min_self.set_parent(node)
             parent.set_left(node)
+            node.set_parent(parent)
+
+        ###balancing the tree
+        while node is not None:
+            self.reset_size(node)
+            self.reset_height(node)
+            node.set_bf()
+
+            if node.get_bf() == -2:
+                if node.get_right().get_bf() == -1:  # left rotation
+                    node = self.left_rotation(node)
+                else:  # right_left rotation
+                    node = self.right_left_rotation(node)
+            elif node.get_bf == 2:  # bf = 2
+                if node.get_left().get_bf() == 1:
+                    node = self.right_rotation(node)
+                else:
+                    node = self.left_right_rotation(node)
+            node = node.get_parent()
+
+
+
 
         if self_is_shorter:
-            return tree.get_root().get_height() - self.get_root().get_height()
+            return tree.get_root().get_height() - root.get_height()
         else:
-            return self.get_root().get_height() - tree.get_root().get_height()
+            return root.get_height() - tree.get_root().get_height()
+
 
     """compute the rank of node in the self
 
@@ -777,22 +837,27 @@ class AVLTree(object):
         self.root = node
         return None
 
-    def __repr__(self):  # no need to understand the implementation of this one
-        # return "tree"
-        out = ""
-        for row in printree(self.root):  # need printree.py file
-            out = out + row + "\n"
-        return out
+    #def __repr__(self):  # no need to understand the implementation of this one
+    #     # return "tree"
+    #    out = ""
+    #    for row in printree(self.root):  # need printree.py file
+    #        out = out + row + "\n"
+    #    return out
 
 
 def main():
     tree = AVLTree()
-    for i in range(100):
-        tree.insert(i, i)
-    node = tree.select(12)
-    left, right = tree.split(node)
-    print(left)
-    print(right)
+    for i in range(3):
+        tree.insert(i+15, i+15)
+
+    tree2 = AVLTree()
+    for i in range(10):
+        tree2.insert(i+1, i+1)
+
+    tree2.join(tree,12,12)
+
+    print(tree2)
+
 
 
 
