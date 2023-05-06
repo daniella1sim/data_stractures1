@@ -612,12 +612,7 @@ class AVLTree(object):
 	"""
 
     def size(self):
-        return self.rec_size()
-
-        def rec_size(self):
-            if not self.is_real_node():
-                return 0
-            return 1 + rec_size(self.get_left) + rec_size(self.get_right)
+        return self.get_root().get_size()
 
     """splits the dictionary at a given node
 
@@ -631,15 +626,18 @@ class AVLTree(object):
 	"""
 
     def split(self, node):
-        left_tree = AVLTree().set_root(node.left)
-        right_tree = AVLTree().set_root(node.right)
+        left_tree = AVLTree().set_root(node.get_left())
+        right_tree = AVLTree().set_root(node.get_right())
         while node is not None:
             if node.get_parent().get_left() == node:
-                right_tree.join(AVLTree(node.get_parent().get_right()), node.get_parent().get_key(), node.get_parent().get_value())
+                right_tree.join(AVLTree(node.get_parent().get_right()), node.get_parent().get_key(),
+                                node.get_parent().get_value())
             else:
-                left_tree.join(AVLTree(node.get_parent().get_left()), node.get_parent().get_key(), node.get_parent().get_value())
+                left_tree.join(AVLTree(node.get_parent().get_left()), node.get_parent().get_key(),
+                               node.get_parent().get_value())
 
         return [left_tree, right_tree]
+
 
     """joins self with key and another AVLTree
 
@@ -727,11 +725,13 @@ class AVLTree(object):
             r = 1
         else:
             r = node.get_left().get_size() + 1
-        curr = node
-        while curr.get_parent() is not None:
-            if curr == curr.get_parent().get_right():
-                r = r + curr.get_parent().get_left().get_size() + 1
-            curr = curr.get_parent()
+        while node.get_parent() is not None:
+            if node == node.get_parent().get_right():
+                if node.get_parent().get_left() is None:
+                    r += 1
+                else:
+                    r += node.get_parent().get_left().get_size() + 1
+            node = node.get_parent()
         return r
 
     """finds the i'th smallest item (according to keys) in self
@@ -789,9 +789,11 @@ def main():
     tree = AVLTree()
     for i in range(100):
         tree.insert(i, i)
+    node = tree.select(12)
+    left, right = tree.split(node)
+    print(left)
+    print(right)
 
-    for i in range(100):
-        print(tree.select(i+1).get_key())
 
 
 main()
