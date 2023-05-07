@@ -513,84 +513,101 @@ class AVLTree(object):
     """
 
     def delete(self, node):
-        curr = self.root
         cnt = 0
+        delta_height ,parent = self.delete_like_bst(node)
 
-        def delete_rec(root, node):
-            # delete like a regular bst
-            if node.get_key() < root.get_key():
-                delete_rec(root.get_left(), node)
-            elif node.get_key() > root.get_key():
-                delete_rec(root.get_right(), node)
+        while parent is not None:
+            parent.set_bf()
+            self.reset_size(node)
+
+            if -2 < parent.get_bf() < 2 and delta_height == 0:
+                self.recursive_reset(parent)
+                break
+
             else:
-                if root.get_parent().get_left() == root:  # left son
-                    if not self.is_real_node(root.get_left()):
-                        root.get_parent().set_right(root.get_right())
-                        return cnt
-                    elif not self.is_real_node(root.get_right()):
-                        root.get_parent().set_right(root.get_right())
-                        return cnt
-                    succ = self.succsessor(root)
+                if parent.get_bf() == 2:
+                    if parent.get_left().get_bf() == -1:
+                        parent = self.left_right_rotation(parent)
+                        cnt += 2
+                    else:
+                        parent = self.right_rotation(parent)
+                        cnt += 1
 
-        count = 0
-        prev_height = node.get_parent().get_height()
-        self.delete_like_bst(self, node)
-        curr = node.get_parent()
-        max_height = max(curr.get_left().get_height(), curr.get_right().get_height())
-        curr.set_height(1 + max_height)
+                elif parent.get_bf() == -2:
+                    if parent.get_right().get_bf() == 1:
+                        parent = self.right_left_rotation(parent)
+                        cnt += 2
+                    else:
+                        parent = self.left_rotation(parent)
+                        cnt += 1
 
-        balance = self.get_bf(node)
+            parent = parent.get_parent()
+            if parent is None:
+                break
+            prev_height = parent.get_height()
+            self.reset_height(parent)
+            delta_height = parent.get_height() - prev_height
+        return cnt
 
-        if -2 < balance < 2:
-            return count
+
 
     def delete_like_bst(self, node):
         parent = node.get_parent()
-        if not self.is_real_node(node.get_left()) and not self.is_real_node(node.get_right()):
+        if node.get_left() is None and node.get_right() is None:
             if node == parent.get_right():
-                node.parent.set_right = None
+                parent.set_right(None)
             else:
-                node.parent.set_left = None
+                parent.set_left(None)
 
-
-
-        elif not self.is_real_node(node.get_left):
-            if node == parent.get_right:
-                parent.set_right = node.get_right
+        elif node.get_left() is None:
+            if node == parent.get_right():
+                parent.set_right(node.get_right())
+                node.get_right().set_parent(parent)
             else:
-                parent.set_left = node.get_right
+                parent.set_left(node.get_right())
+                node.get_right().set_parent(parent)
 
-
-
-        elif not self.is_real_node(node.get_right):
-            if node == parent.get_right:
-                parent.set_right = node.get_left
+        elif node.get_right() is None:
+            if node == parent.get_right():
+                parent.set_right(node.get_left())
+                node.get_left().set_parent(parent)
             else:
-                parent.set_left = node.get_left
-
+                parent.set_left(node.get_left())
+                node.get_left().set_parent(parent)
 
         else:
-            succ = self.succsessor(node)
-            parent = succ.get_parent
-            parent.set_left(succ.get_right)
-            self.reset_height(parent)
-            node.set_key(succ.get_key)
-            node.set_value(succ.get_value)
+            near = self.succsessor(node)
+            parent = near.get_parent()
 
-        return parent
+            if parent.get_right().get_key() == near.get_key():
+                parent.set_right(near.get_right())
+            else:
+                parent.set_left(near.get_right())
+
+            if near.get_right() is not None:
+                near.get_right().set_parent(parent)
+            node.set_key(near.get_key())
+            node.set_value(near.get_value())
+
+        prev_height = parent.get_height()
+        self.recursive_reset(parent)
+        delta = parent.get_height() - prev_height
+        return delta, parent
 
     def succsessor(self, node):
-        res = node
-        if res.get_right().is_real_node():
+        if node.get_right() is not None:
             res = node.get_right()
-            while res.is_real_node():
+            while res.get_left() is not None:
                 res = res.get_left()
             return res
         else:
             res = node.get_parent()
-            while not res.get_right().is_real_node():
+            while res is not None:
+                if node != res.get_right():
+                    break
+                node = res
                 res = res.get_parent()
-            return res.get_right()
+            return res
 
     """returns an array representing dictionary 
 
@@ -600,11 +617,11 @@ class AVLTree(object):
 
     def avl_to_array(self):
         def inorder_rec(node):
-            if not node.is_real_node():
+            if node is None:
                 return []
             return inorder_rec(node.get_left()) + [node.get_key()] + inorder_rec(node.get_right())
 
-        inorder_rec(self.get_root())
+        return inorder_rec(self.get_root())
 
     """returns the number of items in dictionary 
 
@@ -627,15 +644,28 @@ class AVLTree(object):
 	"""
 
     def split(self, node):
-        left_tree = AVLTree().set_root(node.get_left())
-        right_tree = AVLTree().set_root(node.get_right())
+        left_tree = AVLTree()
+        right_tree = AVLTree()
+        left_tree.set_root(node.get_left())
+        right_tree.set_root(node.get_right())
+
         while node is not None:
-            if node.get_parent().get_left() == node:
-                right_tree.join(AVLTree(node.get_parent().get_right()), node.get_parent().get_key(),
-                                node.get_parent().get_value())
-            else:
-                left_tree.join(AVLTree(node.get_parent().get_left()), node.get_parent().get_key(),
-                               node.get_parent().get_value())
+            parent = node.get_parent()
+
+            if parent is None:
+                break
+
+            elif parent.get_left() is not None:
+                if parent.get_left().get_key() == node.get_key():
+                    righty = AVLTree()
+                    righty.set_root(parent.get_right())
+                    righty.get_root().set_parent(None)
+                    right_tree.join(righty, parent.get_key(), parent.get_value())
+                else:
+                    lefty = AVLTree()
+                    lefty.set_root(parent.get_left())
+                    lefty.get_root().set_parent(None)
+                    left_tree.join(lefty, parent.get_key(), parent.get_value())
 
         return [left_tree, right_tree]
 
@@ -719,7 +749,7 @@ class AVLTree(object):
 
         if not self_is_shorter and self_is_smaller:
             max_self = root
-            while max_self.get_height(8) != min_height:
+            while max_self.get_height() != min_height:
                 max_self = max_self.get_right()
 
             parent = max_self.get_parent()
@@ -837,28 +867,23 @@ class AVLTree(object):
         self.root = node
         return None
 
-    #def __repr__(self):  # no need to understand the implementation of this one
-    #     # return "tree"
-    #    out = ""
-    #    for row in printree(self.root):  # need printree.py file
-    #        out = out + row + "\n"
-    #    return out
+    def __repr__(self):  # no need to understand the implementation of this one
+        # return "tree"
+       out = ""
+       for row in printree(self.root):  # need printree.py file
+           out = out + row + "\n"
+       return out
 
 
 def main():
     tree = AVLTree()
-    for i in range(3):
-        tree.insert(i+15, i+15)
-
-    tree2 = AVLTree()
     for i in range(10):
-        tree2.insert(i+1, i+1)
+        tree.insert(2**i+1, 2**i+1)
 
-    tree2.join(tree,12,12)
+    node = tree.select(5)
+    tree1 = tree.split(node)
 
-    print(tree2)
-
-
+    print(tree1)
 
 
 main()
