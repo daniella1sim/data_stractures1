@@ -651,21 +651,31 @@ class AVLTree(object):
 
         while node is not None:
             parent = node.get_parent()
-
             if parent is None:
                 break
 
             elif parent.get_left() is not None:
-                if parent.get_left().get_key() == node.get_key():
-                    righty = AVLTree()
-                    righty.set_root(parent.get_right())
-                    righty.get_root().set_parent(None)
-                    right_tree.join(righty, parent.get_key(), parent.get_value())
+                if parent.get_left().get_key() <= node.get_key():
+                    if right_tree.get_root() is None:
+                        parent = self.right_rotation(parent)
+                        right_tree.set_root(parent)
+                        parent.set_parent(None)
+                    else:
+                        left = AVLTree()
+                        left.set_root(parent.get_left())
+                        left.get_root().set_parent(None)
+                        left_tree.join(left, parent.get_key(), parent.get_value())
+
                 else:
-                    lefty = AVLTree()
-                    lefty.set_root(parent.get_left())
-                    lefty.get_root().set_parent(None)
-                    left_tree.join(lefty, parent.get_key(), parent.get_value())
+                    if left_tree.get_root() is None:
+                        parent = self.left_rotation(parent)
+                        left_tree.set_root(parent)
+                        parent.set_parent(None)
+                    else:
+                        right = AVLTree()
+                        right.set_root(parent.get_right())
+                        right.get_root().set_parent(None)
+                        right_tree.join(right, parent.get_key(), parent.get_value())
 
         return [left_tree, right_tree]
 
