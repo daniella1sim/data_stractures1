@@ -14,7 +14,7 @@ def trepr(t, bykey=False):
         return ["#"]
 
     thistr = str(t.key) if bykey else str(t.val)
-    thistr += f" (b={t.get_balance()},h={t.get_height()},s={t.get_size()},r={t.is_real_node()})"
+    thistr += f" (b={t.get_bf()},h={t.get_height()},s={t.get_size()},r={t.is_real_node()})"
 
     return conc(trepr(t.left, bykey), thistr, trepr(t.right, bykey))
 
