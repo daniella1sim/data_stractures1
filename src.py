@@ -409,6 +409,11 @@ class AVLTree(object):
 
         right = node.get_right()
         right_left = right.get_left()
+        if right_left is None:
+            right_left = AVLNode(None, None)
+        if right.get_right() is None:
+            right.set_right(AVLNode(None, None))
+
         right.set_left(node)
         node.set_right(right_left)
         node.set_parent(right)
@@ -446,13 +451,14 @@ class AVLTree(object):
         parent = node.get_parent()
         left = node.get_left()
         left_right = left.get_right()
+        if left_right is None:
+            left_right = AVLNode(None, None)
+        if left.get_left() is None:
+            left.set_left(AVLNode(None, None))
         left.set_right(node)
         node.set_left(left_right)
         node.set_parent(left)
         left.set_parent(parent)
-        print("l ", node.get_left(), "ll ", node.get_left().get_left(), "r ", node.get_right(), "rr ",
-              node.get_right().get_right(), "lr ", node.get_left().get_right(), "rl ", node.get_right().get_left())
-
         left_right.set_parent(node)
 
         if parent is not None:
@@ -891,59 +897,40 @@ class AVLTree(object):
             node.set_parent(parent)
 
         # balancing the tree
+        delta_height = -1 #height changes after join
         while node is not None:
-            self.reset_size(node)
-            self.reset_height(node)
+            if -2 < node.get_bf() < 2 and delta_height == 0:
+                self.recursive_reset(parent)
+                break
+
             node.set_bf()
+            self.reset_size(node)
 
             if node.get_bf() == -2:
                 if node.get_right().get_bf() == -1:  # left rotation
                     node = self.left_rotation(node)
                 else:  # right_left rotation
                     node.set_right(self.right_rotation(node.get_right()))
-
-
-
-                    if not node.get_left().is_real_node():
-                        fix_none(node.get_left())
-
-                    if not node.get_right().is_real_node():
-                        fix_none(node.get_right())
-
-
-
-                    #print("l ", node.get_left(), "ll ", node.get_left().get_left(), "r ", node.get_right(), "rr ", node.get_right().get_right(), "lr ", node.get_left().get_right(),  "rl ", node.get_right().get_left())
                     node = self.left_rotation(node)
             elif node.get_bf == 2:
                 if node.get_left().get_bf() == 1:  # right rotation
                     node = self.right_rotation(node)
                 else:  # left_right rotation
                     node.set_left(self.left_rotation(node.get_left()))
-
-
-
-                    if not node.get_left().is_real_node():
-                        fix_none(node.get_left())
-
-                    if not node.get_right().is_real_node():
-                        fix_none(node.get_right())
-
-
-
                     node = self.right_rotation(node)
+
             node = node.get_parent()
+            if node == None:
+                break
+            prev_height = node.get_height()
+            self.reset_height(node)
+            delta_height = node.get_height() - prev_height
+
 
         if self_is_shorter:  # absolute value
             return 1 + tree.get_root().get_height() - root.get_height()
         else:
             return 1 + root.get_height() - tree.get_root().get_height()
-
-
-    def fix_none(self, node):
-        if node.get_right() is None:
-            node.set_right(AVLNode(None, None))
-        if node.get_left() is None:
-            node.set_left(AVLNode(None, None))
 
     """compute the rank of node in the self
 
@@ -1090,8 +1077,8 @@ def nisuy1():
 
 
 def main():
-    for j in range(50):
-        n = 1500 * (2)
+    for j in range(1,11):
+        n = 1500*(2**j)
 
         random_lst = [i for i in range(n)]
         random_tree = AVLTree()
@@ -1102,7 +1089,7 @@ def main():
         rand_node = random_tree.select(random.randrange(n))
 
         random_cnt, tree_arr = random_tree.split(rand_node)
-
+        print(j)
         print(f'n is: {n} and mean cost for joins is {random_cnt}')
 
 main()
