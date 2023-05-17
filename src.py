@@ -740,7 +740,9 @@ class AVLTree(object):
 
     def split(self, node):
         cnt = 0
+        max = 0
         ops = 0
+        current_cost = 0
         leftTree = AVLTree()
         rightTree = AVLTree()
 
@@ -758,7 +760,8 @@ class AVLTree(object):
                 node = parent
                 parent = parent.get_parent()
                 left.get_root().set_parent(None)
-                cnt += leftTree.join(left, node.get_key(), node.get_value())  # join left with parent left subtree
+                current_cost =  leftTree.join(left, node.get_key(), node.get_value())  # join left with parent left subtree
+                cnt += current_cost
 
             else:
                 ops += 1
@@ -767,9 +770,13 @@ class AVLTree(object):
                 node = parent
                 parent = parent.get_parent()
                 right.get_root().set_parent(None)
-                cnt += rightTree.join(right, node.get_key(), node.get_value())
+                current_cost = rightTree.join(right, node.get_key(), node.get_value())
+                cnt += current_cost
 
-        return cnt/ops, [leftTree, rightTree]
+            if max < current_cost:
+                max = current_cost
+
+        return cnt/ops, max, [leftTree, rightTree]
 
     """joins self with key and another AVLTree
 
@@ -1076,6 +1083,13 @@ def nisuy1():
         print(f'almost reverse AVL count is: {count_almost_reverse_AVL} and almost reverse switch count: {count_almost_reverse_switch}')
 
 
+def find_middle_node(node):
+    res = node.get_left()
+    while res.get_right().is_real_node():
+        res = res.get_right()
+    return res
+
+
 def main():
     for j in range(1,11):
         n = 1500*(2**j)
@@ -1083,13 +1097,20 @@ def main():
         random_lst = [i for i in range(n)]
         random_tree = AVLTree()
         random.shuffle(random_lst)
+        tree2 = AVLTree()
+
         for i in range(n):
             random_tree.insert(random_lst[i], random_lst[i])
+            tree2.insert(random_lst[i], random_lst[i])
 
+        middle_node = find_middle_node(random_tree.get_root())
         rand_node = random_tree.select(random.randrange(n))
 
-        random_cnt, tree_arr = random_tree.split(rand_node)
-        print(j)
-        print(f'n is: {n} and mean cost for joins is {random_cnt}')
+        middle_cnt, max_cost_middle, tree2_arr = tree2.split(middle_node)
+        random_cnt, max_cost_random, tree_arr = random_tree.split(rand_node)
+
+        print(f'num {j} - tree has {n} nodes')
+        print(f'for random node - {rand_node.get_key()} - mean cost for joins is {random_cnt} and max cost is {max_cost_random}')
+        print(f'for middle node - {middle_node.get_key()} - mean cost for joins is {middle_cnt} and max cost is {max_cost_middle}')
 
 main()
