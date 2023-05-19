@@ -232,7 +232,7 @@ class AVLTree(object):
                 node = node.get_right()
             else:
                 node = node.get_left()
-        return node.get_value()
+        return node
 
     """searches for a value in the dictionary corresponding to the key, using a finger tree search starting from the maximum
         of the tree. if the node is not found None is returned
@@ -301,22 +301,17 @@ class AVLTree(object):
         if parent is not None:  # saving the height before the insert to compare
             prev_height = parent.get_height()
 
-        node.set_parent(parent)
-
         if node.get_key() < parent.get_key():  # inserting the node as a left or right leaf
             parent.set_left(node)
-            node.set_parent(parent)
-            node.set_left(AVLNode(None, None))
-            node.set_right(AVLNode(None, None))
-            node.get_left().set_parent(node)
-            node.get_right().set_parent(node)
+
         else:
             parent.set_right(node)
-            node.set_parent(parent)
-            node.set_left(AVLNode(None, None))
-            node.set_right(AVLNode(None, None))
-            node.get_left().set_parent(node)
-            node.get_right().set_parent(node)
+
+        node.set_parent(parent)
+        node.set_left(AVLNode(None, None))
+        node.set_right(AVLNode(None, None))
+        node.get_left().set_parent(node)
+        node.get_right().set_parent(node)
 
         self.reset_size(node)
         self.reset_height(node)
@@ -539,7 +534,6 @@ class AVLTree(object):
 
     def delete(self, node):
         cnt = 0
-
         if self.get_root().get_size() == 1:  # deleting a tree with only root
             self.set_root(None)
             self.max = None
@@ -707,9 +701,9 @@ class AVLTree(object):
 
     def avl_to_array(self):
         def inorder_rec(node):
-            if node is None:
+            if not node.is_real_node():
                 return []
-            return inorder_rec(node.get_left()) + [node.get_key()] + inorder_rec(node.get_right())
+            return inorder_rec(node.get_left()) + [(node.get_key(), node.get_value())] + inorder_rec(node.get_right())
 
         return inorder_rec(self.get_root())
 
@@ -774,8 +768,8 @@ class AVLTree(object):
                 maximum = current_cost
 
         if ops == 0:
-            return 0, maximum, [leftTree, rightTree]
-        return cnt/ops, maximum, [leftTree, rightTree]
+            return [leftTree, rightTree]
+        return [leftTree, rightTree]
 
     """joins self with key and another AVLTree
 
@@ -1034,6 +1028,7 @@ class AVLTree(object):
 
     def set_root(self, node):
         self.root = node
+        node.set_parent(None)
         return None
 
     def __repr__(self):  # no need to understand the implementation of this one
@@ -1098,8 +1093,8 @@ def find_middle_node(node):
 
 
 def main():
-    for j in range(1,11):
-        n = 1500*(2**j)
+    for j in range(0):
+        n = 100*(1)
 
         random_lst = [i+1 for i in range(n)]
         random_tree = AVLTree()
@@ -1109,18 +1104,22 @@ def main():
         for i in range(n):
             random_tree.insert(random_lst[i], random_lst[i])
             tree2.insert(random_lst[i], random_lst[i])
+        #print(tree2.avl_to_array())
+        #print(random_tree.avl_to_array())
+
+        print(random_tree)
 
         middle_node = find_middle_node(random_tree.get_root())
         rand_node = random_tree.select(random.randint(1,n))
 
 
         random_root = random_tree.get_root()
-        middle_cnt, max_cost_middle, tree2_arr = tree2.split(middle_node)
-        random_cnt, max_cost_random, tree_arr = random_tree.split(rand_node)
+        tree2_arr = tree2.split(middle_node)
+        tree_arr = random_tree.split(rand_node)
 
-        print(f'num {j} - tree has {n} nodes')
-        print(f'random root {random_root.get_key()} height: {random_root.get_height()}')
-        print(f'for random node - {rand_node.get_key()} - mean cost for joins is {random_cnt} and max cost is {max_cost_random}')
-        print(f'for middle node - {middle_node.get_key()} - mean cost for joins is {middle_cnt} and max cost is {max_cost_middle}')
+        #print(f'num {j} - tree has {n} nodes')
+        #print(f'random root {random_root.get_key()} height: {random_root.get_height()}')
+        #print(f'for random node - {rand_node.get_key()} - mean cost for joins is {random_cnt} and max cost is {max_cost_random}')
+        #print(f'for middle node - {middle_node.get_key()} - mean cost for joins is {middle_cnt} and max cost is {max_cost_middle}')
 
 main()
