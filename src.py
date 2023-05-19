@@ -8,7 +8,6 @@
 from PrintTreeUtil import *
 import random
 
-
 class AVLNode(object):
     """A class representing a node in an AVL tree
 
@@ -740,8 +739,8 @@ class AVLTree(object):
 
     def split(self, node):
         cnt = 0
-        max = 0
-        ops = 0
+        maximum = 0
+        ops = self.get_root().get_height()
         current_cost = 0
         leftTree = AVLTree()
         rightTree = AVLTree()
@@ -754,7 +753,6 @@ class AVLTree(object):
         while parent is not None:
 
             if node.get_key() == parent.get_right().get_key():  # parent is smaller than node
-                ops += 1
                 left = AVLTree()
                 left.set_root(parent.get_left())
                 node = parent
@@ -764,7 +762,6 @@ class AVLTree(object):
                 cnt += current_cost
 
             else:
-                ops += 1
                 right = AVLTree()
                 right.set_root(parent.get_right())
                 node = parent
@@ -773,10 +770,12 @@ class AVLTree(object):
                 current_cost = rightTree.join(right, node.get_key(), node.get_value())
                 cnt += current_cost
 
-            if max < current_cost:
-                max = current_cost
+            if maximum < current_cost:
+                maximum = current_cost
 
-        return cnt/ops, max, [leftTree, rightTree]
+        if ops == 0:
+            return 0, maximum, [leftTree, rightTree]
+        return cnt/ops, maximum, [leftTree, rightTree]
 
     """joins self with key and another AVLTree
 
@@ -795,10 +794,18 @@ class AVLTree(object):
 	"""
 
     def join(self, tree, key, val):
+        #print(self.get_root(), tree.get_root(), key, val)
         node = AVLNode(key, val)
         root = self.get_root()
         self_is_shorter = True
         self_is_smaller = True
+
+        if root is None:
+            self.set_root(AVLNode(None, None))
+            root = self.get_root()
+
+        if tree.get_root() is None:
+            tree.set_root(AVLNode(None, None))
 
         if not root.is_real_node() and not tree.get_root().is_real_node():
             # both trees are empty
@@ -811,12 +818,12 @@ class AVLTree(object):
             prev_height = tree.get_root().get_height()
             tree.insert(key, val)
             self.set_root(tree.get_root())
-            return tree.get_root().get_height() - prev_height
+            return prev_height + 1
 
         if not tree.get_root().is_real_node():  # only second tree is empty
             prev_height = root.get_height()
             self.insert(key, val)
-            return root.get_height() - prev_height
+            return prev_height + 1
 
         if root.get_key() > key:
             self_is_smaller = False
@@ -838,9 +845,10 @@ class AVLTree(object):
             self.reset_height(node)
             self.reset_size(node)
             node.set_bf()
-            return 0
+            return 1
 
         min_height = min(root.get_height(), tree.get_root().get_height())
+        res = 1 + abs(root.get_height() - tree.get_root().get_height())
         if root.get_height() > min_height:
             self_is_shorter = False
 
@@ -933,11 +941,7 @@ class AVLTree(object):
             self.reset_height(node)
             delta_height = node.get_height() - prev_height
 
-
-        if self_is_shorter:  # absolute value
-            return 1 + tree.get_root().get_height() - root.get_height()
-        else:
-            return 1 + root.get_height() - tree.get_root().get_height()
+        return res
 
     """compute the rank of node in the self
 
@@ -992,7 +996,10 @@ class AVLTree(object):
 
     def select_rec(self, node, i):
         if not node.is_real_node():
+            #print(i)
             return None
+
+
 
         if not node.get_left().is_real_node():  # smallest node
             curr_rank = 1
@@ -1094,7 +1101,7 @@ def main():
     for j in range(1,11):
         n = 1500*(2**j)
 
-        random_lst = [i for i in range(n)]
+        random_lst = [i+1 for i in range(n)]
         random_tree = AVLTree()
         random.shuffle(random_lst)
         tree2 = AVLTree()
@@ -1104,12 +1111,15 @@ def main():
             tree2.insert(random_lst[i], random_lst[i])
 
         middle_node = find_middle_node(random_tree.get_root())
-        rand_node = random_tree.select(random.randrange(n))
+        rand_node = random_tree.select(random.randint(1,n))
 
+
+        random_root = random_tree.get_root()
         middle_cnt, max_cost_middle, tree2_arr = tree2.split(middle_node)
         random_cnt, max_cost_random, tree_arr = random_tree.split(rand_node)
 
         print(f'num {j} - tree has {n} nodes')
+        print(f'random root {random_root.get_key()} height: {random_root.get_height()}')
         print(f'for random node - {rand_node.get_key()} - mean cost for joins is {random_cnt} and max cost is {max_cost_random}')
         print(f'for middle node - {middle_node.get_key()} - mean cost for joins is {middle_cnt} and max cost is {max_cost_middle}')
 
