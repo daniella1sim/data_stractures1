@@ -230,7 +230,7 @@ class AVLTree(object):
                 node = node.get_right()
             else:
                 node = node.get_left()
-        return node.get_value()
+        return node
 
     """" inserts a node to the tree as a leaf using regular BST insertion
 
@@ -246,7 +246,6 @@ class AVLTree(object):
         curr = self.get_root()  # starting at the root
         parent = None
         prev_height = 0
-
         if curr is None:  # the tree was empty and so node needs to be the new root
             self.set_root(node)
             node.set_left(AVLNode(None, None))  # virtual kids
@@ -267,22 +266,17 @@ class AVLTree(object):
         if parent is not None:  # saving the height before the insert to compare
             prev_height = parent.get_height()
 
-        node.set_parent(parent)
-
         if node.get_key() < parent.get_key():  # inserting the node as a left or right leaf
             parent.set_left(node)
-            node.set_parent(parent)
-            node.set_left(AVLNode(None, None))
-            node.set_right(AVLNode(None, None))
-            node.get_left().set_parent(node)
-            node.get_right().set_parent(node)
+
         else:
             parent.set_right(node)
-            node.set_parent(parent)
-            node.set_left(AVLNode(None, None))
-            node.set_right(AVLNode(None, None))
-            node.get_left().set_parent(node)
-            node.get_right().set_parent(node)
+
+        node.set_parent(parent)
+        node.set_left(AVLNode(None, None))
+        node.set_right(AVLNode(None, None))
+        node.get_left().set_parent(node)
+        node.get_right().set_parent(node)
 
         self.reset_size(node)
         self.reset_height(node)
@@ -637,9 +631,9 @@ class AVLTree(object):
 
     def avl_to_array(self):
         def inorder_rec(node):
-            if node is None:
+            if not node.is_real_node():
                 return []
-            return inorder_rec(node.get_left()) + [node.get_key()] + inorder_rec(node.get_right())
+            return inorder_rec(node.get_left()) + [(node.get_key(), node.get_value())] + inorder_rec(node.get_right())
 
         return inorder_rec(self.get_root())
 
@@ -950,4 +944,5 @@ class AVLTree(object):
 
     def set_root(self, node):
         self.root = node
+        node.set_parent(None)
         return None
