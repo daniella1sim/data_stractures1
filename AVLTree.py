@@ -4,10 +4,7 @@
 # id2      - 322430661
 # name2    - Noam Shtrahman
 
-
 from PrintTreeUtil import *
-import random
-
 
 class AVLNode(object):
     """A class representing a node in an AVL tree
@@ -187,9 +184,6 @@ class AVLNode(object):
     def get_bf(self):
         return self.bf
 
-    def get_balance_factor(self):
-        return self.bf
-
     """sets balance factor for node
 
 		@type s: int
@@ -213,7 +207,6 @@ class AVLTree(object):
 
     def __init__(self):
         self.root = None
-        self.max = None
 
     """searches for a value in the dictionary corresponding to the key, using a binary search starting from the root
     of the tree. if the node is not found None is returned
@@ -230,35 +223,13 @@ class AVLTree(object):
         node = self.get_root()  # bst search starting at the root
         while node.get_key() != key:
             if not node.get_left().is_real_node() and not node.get_right().is_real_node():
-                # we reached a leaf that is different from the required node
+                # we reached a leaf that is different than the required node
                 return None
             elif node.get_key() < key:  # regular bst search pattern
                 node = node.get_right()
             else:
                 node = node.get_left()
         return node
-
-    """searches for a value in the dictionary corresponding to the key, using a finger tree search starting from the maximum
-        of the tree. if the node is not found None is returned
-
-        time complexity: O(logk), with k being the rank of the given node
-
-    	@type key: int
-    	@param key: a key to be searched
-    	@rtype: any
-    	@returns: the value corresponding to key.
-    	"""
-
-    def finger_search(self, key):
-        max_node = self.max
-
-        parent = max_node.get_parent()
-        while key < parent.get_key():
-            parent = parent.get_parent()
-
-        tree = AVLTree()
-        tree.set_root(parent)
-        return tree.search(key)
 
     """" inserts a node to the tree as a leaf using regular BST insertion
 
@@ -270,33 +241,22 @@ class AVLTree(object):
     @returns: the height difference of the parent of the node before and after insertion 
     """
 
-    def insert_as_usual(self, node, finger_flag):
+    def insert_as_usual(self, node):
         curr = self.get_root()  # starting at the root
         parent = None
         prev_height = 0
-        cnt = 0
-
         if curr is None or not curr.is_real_node():  # the tree was empty and so node needs to be the new root
             self.set_root(node)
-            self.max = node
             node.set_left(AVLNode(None, None))  # virtual kids
             node.set_right(AVLNode(None, None))
             node.get_left().set_parent(node)
             node.get_right().set_parent(node)
             self.reset_size(node)
             self.reset_height(node)
-            return 0, 0  # the root has no parent to change height
-
-        if finger_flag:
-            curr = self.max
-
-            while node.get_key() < curr.get_key() and curr.get_parent() is not None:
-                curr = curr.get_parent()
-                cnt += 1
+            return 0  # the root has no parent to change height
 
         while curr.is_real_node():  # going down the tree to the correct position
             parent = curr
-            cnt += 1
             if node.get_key() < curr.get_key():
                 curr = curr.get_left()
             else:
@@ -321,11 +281,9 @@ class AVLTree(object):
         self.reset_height(node)
         self.reset_height(parent)
         self.reset_size(parent)
+        #self.recursive_reset()?? or maybe change node height at initialization
 
-        if finger_flag and node.get_key() > self.max.get_key():  ###
-            self.max = node
-
-        return parent.get_height() - prev_height, cnt
+        return parent.get_height() - prev_height
         # the new height minus the old one and the search counter for the theoretical part
 
     """inserts a new node with val, key to the dictionary using insertAsUsual,
@@ -342,10 +300,10 @@ class AVLTree(object):
     @returns: the number of rebalancing operation due to AVL rebalancing
     """
 
-    def insert(self, key, val, is_finger=False):
+    def insert(self, key, val):
         cnt = 0
         node = AVLNode(key, val)  # creating a new node with the given parameters
-        delta_height, search_cost = self.insert_as_usual(node, is_finger)  # inserting a leaf
+        delta_height = self.insert_as_usual(node)  # inserting a leaf
         parent = node.get_parent()
 
         while parent is not None:
@@ -355,8 +313,6 @@ class AVLTree(object):
 
             if 2 > bf > -2 and delta_height == 0:
                 self.recursive_reset(parent)
-                if is_finger:
-                    return cnt + search_cost
                 return cnt
 
             elif 2 > bf > -2 and delta_height != 0:
@@ -387,8 +343,6 @@ class AVLTree(object):
             self.reset_height(parent)
             delta_height = parent.get_height() - prev_height
 
-        if is_finger:
-            return cnt + search_cost
         return cnt
 
     """
@@ -538,12 +492,9 @@ class AVLTree(object):
 
     def delete(self, node):
         cnt = 0
-        if node is None:
-            return cnt
 
         if self.get_root().get_size() == 1:  # deleting a tree with only root
             self.set_root(AVLNode(None, None))
-            self.max = None
             return 1
 
         delta_height, parent = self.delete_like_bst(node)  # deleting the node as usual
@@ -599,9 +550,6 @@ class AVLTree(object):
     def delete_like_bst(self, node):
         parent = node.get_parent()
 
-        #if node.get_key() == self.max.get_key():  ###
-        #    self.max = self.predecessor(node)
-
         if not node.get_left().is_real_node() and not node.get_right().is_real_node():
             # node is leaf
             if node.get_key() == parent.get_right().get_key():
@@ -611,20 +559,19 @@ class AVLTree(object):
                 # node is left child
                 parent.set_left(AVLNode(None, None))
                 parent.get_left().set_parent(parent)
-            self.reset_height(self.get_root())
-            self.reset_size(self.get_root())
-            self.get_root().set_bf()
-            return 1, parent
 
         elif not node.get_right().is_real_node() and parent is None:
                 #node is root with only one left child
             self.set_root(node.get_left())
-            self.get_root().set_parent(None)
-            self.get_root().set_right(AVLNode(None, None))
-            self.get_root().set_left(AVLNode(None, None))
-            self.reset_height(self.get_root())
-            self.reset_size(self.get_root())
-            self.get_root().set_bf()
+            root = self.get_root()
+            root.set_parent(None)
+            root.set_right(AVLNode(None, None))
+            root.set_left(AVLNode(None, None))
+            root.get_left().set_parent(root)
+            root.get_right().set_parent(root)
+            self.reset_height(root)
+            self.reset_size(root)
+            root.set_bf()
             return 1, None
 
         elif not node.get_left().is_real_node() and parent is not None:
@@ -650,9 +597,9 @@ class AVLTree(object):
             parent = near.get_parent()
 
             if parent.get_right().get_key() == near.get_key():  # successor is right child
-                parent.set_right(near)
+                parent.set_right(near.get_right())
             else:
-                parent.set_left(near)
+                parent.set_left(near.get_right())
 
             near.get_right().set_parent(parent)
             node.set_key(near.get_key())
@@ -688,37 +635,12 @@ class AVLTree(object):
                 res = res.get_parent()
             return res
 
-    """finds the predecessor of the given node according to the key in the dictionary
-
-            time complexity = O(logn)
-
-            @type node: AVLNode
-            @pre: node is a real pointer to a node in self
-            @rtype: AVLNode
-            @returns: the predecessor of the given node
-        """
-
-    def predecessor(self, node):
-        if node.get_left().is_real_node():
-            res = node.get_left()
-            while res.get_right().is_real_node():
-                res = res.get_right()
-            return res
-        else:
-            res = node.get_parent()
-            while res is not None:
-                if node != res.get_left():
-                    break
-                node = res
-                res = res.get_parent()
-            return res
-
     """returns an array representing dictionary 
 
     time complexity: O(n)
 
 	@rtype: list
-	@returns: a sorted list according to key of tuples (key, value) representing the data structure
+	@returns: a sorted list according to key of touples (key, value) representing the data structure
 	"""
 
     def avl_to_array(self):
@@ -738,8 +660,6 @@ class AVLTree(object):
 	"""
 
     def size(self):
-        if self.get_root() is None:
-            return 0
         return self.get_root().get_size()
 
     """splits the dictionary at a given node
@@ -756,10 +676,6 @@ class AVLTree(object):
 	"""
 
     def split(self, node):
-        cnt = 0
-        maximum = 0
-        ops = self.get_root().get_height()
-        current_cost = 0
         leftTree = AVLTree()
         rightTree = AVLTree()
 
@@ -776,9 +692,7 @@ class AVLTree(object):
                 node = parent
                 parent = parent.get_parent()
                 left.get_root().set_parent(None)
-                current_cost = leftTree.join(left, node.get_key(),
-                                             node.get_value())  # join left with parent left subtree
-                cnt += current_cost
+                leftTree.join(left, node.get_key(), node.get_value())  # join left with parent left subtree
 
             else:
                 right = AVLTree()
@@ -786,14 +700,8 @@ class AVLTree(object):
                 node = parent
                 parent = parent.get_parent()
                 right.get_root().set_parent(None)
-                current_cost = rightTree.join(right, node.get_key(), node.get_value())
-                cnt += current_cost
+                rightTree.join(right, node.get_key(), node.get_value())
 
-            if maximum < current_cost:
-                maximum = current_cost
-
-        if ops == 0:
-            return [leftTree, rightTree]
         return [leftTree, rightTree]
 
     """joins self with key and another AVLTree
@@ -803,7 +711,7 @@ class AVLTree(object):
 	@type tree: AVLTree 
 	@param tree: a dictionary to be joined with self
 	@type key: int 
-	@param key: The key seperating self with tree
+	@param key: The key separting self with tree
 	@type val: any 
 	@param val: The value attached to key
 	@pre: all keys in self are smaller than key and all keys in tree are larger than key,
@@ -813,7 +721,6 @@ class AVLTree(object):
 	"""
 
     def join(self, tree, key, val):
-        # print(self.get_root(), tree.get_root(), key, val)
         node = AVLNode(key, val)
         root = self.get_root()
         self_is_shorter = True
@@ -833,10 +740,8 @@ class AVLTree(object):
             node.set_right(AVLNode(None, None))
             node.get_left().set_parent(node)
             node.get_right().set_parent(node)
-
-            self.reset_size(self.get_root())
-            self.reset_height(self.get_root())
-            self.get_root().set_bf()
+            self.reset_height(node)
+            self.reset_size(node)
             return 1
 
         if not root.is_real_node():  # only self is empty
@@ -874,6 +779,7 @@ class AVLTree(object):
 
         min_height = min(root.get_height(), tree.get_root().get_height())
         res = 1 + abs(root.get_height() - tree.get_root().get_height())
+
         if root.get_height() > min_height:
             self_is_shorter = False
 
@@ -935,36 +841,42 @@ class AVLTree(object):
             min_self.set_parent(node)
             parent.set_left(node)
             node.set_parent(parent)
+            self.recursive_reset(node)
 
         # balancing the tree
         delta_height = -1  # height changes after join
         while node is not None:
+            print(self)
+            print(node.get_key(), node.get_bf())
+
             if -2 < node.get_bf() < 2 and delta_height == 0:
-                self.recursive_reset(parent)
-                break
+                if not node.get_parent() or -2 < node.get_parent().get_bf() < 2:
+                    self.recursive_reset(parent)
+                    break
 
             node.set_bf()
             self.reset_size(node)
-
-            if node.get_bf() == -2:
+            if node.get_bf() <= -2:
                 if node.get_right().get_bf() == -1:  # left rotation
                     node = self.left_rotation(node)
                 else:  # right_left rotation
                     node.set_right(self.right_rotation(node.get_right()))
                     node = self.left_rotation(node)
-            elif node.get_bf == 2:
+            if node.get_bf() >= 2:
                 if node.get_left().get_bf() == 1:  # right rotation
                     node = self.right_rotation(node)
+
                 else:  # left_right rotation
                     node.set_left(self.left_rotation(node.get_left()))
                     node = self.right_rotation(node)
 
-            node = node.get_parent()
-            if node == None:
-                break
-            prev_height = node.get_height()
+            if -2 < node.get_bf() < 2:
+                node = node.get_parent()
+                if node is None:
+                    break
+                prev_height = node.get_height()
+                delta_height = node.get_height() - prev_height
             self.reset_height(node)
-            delta_height = node.get_height() - prev_height
 
         return res
 
@@ -1021,7 +933,6 @@ class AVLTree(object):
 
     def select_rec(self, node, i):
         if not node.is_real_node():
-            # print(i)
             return None
 
         if not node.get_left().is_real_node():  # smallest node
@@ -1058,7 +969,7 @@ class AVLTree(object):
     def set_root(self, node):
         self.root = node
         node.set_parent(None)
-        return None
+
 
     def __repr__(self):  # no need to understand the implementation of this one
         # return "tree"
@@ -1066,88 +977,3 @@ class AVLTree(object):
         for row in printree(self.root):  # need printree.py file
             out = out + row + "\n"
         return out
-
-
-def reverser(n):
-    lst = []
-    for i in range(n // 300):
-        for j in range(300):
-            lst.append(300 * (i + 1) - j)
-    return lst
-
-
-def count_switch(lst):
-    cnt = 0
-    for i in range(len(lst)):
-        for j in range(len(lst)):
-            if j > i and lst[j] < lst[i]:
-                cnt += 1
-    return cnt
-
-
-def nisuy1():
-    for j in range(1, 11):
-        n = 1500 * (2 ** j)
-        count_random_AVL = 0
-        count_reverse_AVL = 0
-        count_almost_reverse_AVL = 0
-
-        random_lst = [i for i in range(n)]
-        random.shuffle(random_lst)
-        reverse_lst = [n - i for i in range(n)]
-        almost_reverse_lst = reverser(n)
-
-        random_tree = AVLTree()
-        reverse_tree = AVLTree()
-        almost_reverse_tree = AVLTree()
-        count_random_switch = count_switch(random_lst)
-        count_reverse_switch = count_switch(reverse_lst)
-        count_almost_reverse_switch = count_switch(almost_reverse_lst)
-        for i in range(n):
-            count_random_AVL += random_tree.insert(random_lst[i], random_lst[i], True)
-            count_reverse_AVL += reverse_tree.insert(reverse_lst[i], reverse_lst[i], True)
-            count_almost_reverse_AVL += almost_reverse_tree.insert(almost_reverse_lst[i], almost_reverse_lst[i], True)
-
-        print(j)
-        print(f'random AVL count is: {count_random_AVL} and random switch count: {count_random_switch}')
-        print(f'reverse AVL count is: {count_reverse_AVL} and reverse switch count: {count_reverse_switch}')
-        print(
-            f'almost reverse AVL count is: {count_almost_reverse_AVL} and almost reverse switch count: {count_almost_reverse_switch}')
-
-
-def find_middle_node(node):
-    res = node.get_left()
-    while res.get_right().is_real_node():
-        res = res.get_right()
-    return res
-
-
-# def main():
-    # for j in range(0):
-    #     n = 100 * (1)
-    #
-    #     random_lst = [i + 1 for i in range(n)]
-    #     random_tree = AVLTree()
-    #     random.shuffle(random_lst)
-    #     tree2 = AVLTree()
-    #
-    #     for i in range(n):
-    #         random_tree.insert(random_lst[i], random_lst[i])
-    #         tree2.insert(random_lst[i], random_lst[i])
-    #     # print(tree2.avl_to_array())
-    #     # print(random_tree.avl_to_array())
-    #
-    #     print(random_tree)
-    #
-    #     middle_node = find_middle_node(random_tree.get_root())
-    #     rand_node = random_tree.select(random.randint(1, n))
-    #
-    #     random_root = random_tree.get_root()
-    #     tree2_arr = tree2.split(middle_node)
-    #     tree_arr = random_tree.split(rand_node)
-    #
-    #     # print(f'num {j} - tree has {n} nodes')
-    #     # print(f'random root {random_root.get_key()} height: {random_root.get_height()}')
-    #     # print(f'for random node - {rand_node.get_key()} - mean cost for joins is {random_cnt} and max cost is {max_cost_random}')
-    #     # print(f'for middle node - {middle_node.get_key()} - mean cost for joins is {middle_cnt} and max cost is {max_cost_middle}')
-
