@@ -153,6 +153,8 @@ class AVLNode(object):
 	"""
 
     def set_height(self, h):
+        if not self.is_real_node():
+            self.height = -1
         self.height = h
         return None
 
@@ -163,6 +165,8 @@ class AVLNode(object):
 	"""
 
     def set_size(self, s):
+        if not self.is_real_node():
+            self.size = 0
         self.size = s
         return None
 
@@ -501,34 +505,28 @@ class AVLTree(object):
 
         while parent is not None:
             parent.set_bf()
-            self.reset_size(node)
-
-            if -2 < parent.get_bf() < 2 and delta_height == 0:  # if parent is unchanged check and correct up to root
-                self.recursive_reset(parent)
-                break
-
-            elif -2 < parent.get_bf() < 2 and delta_height != 0:
+            self.reset_size(parent)
+            if -2 < parent.get_bf() < 2 and delta_height != 0:
                 cnt += 1
+            elif parent.get_bf() == 2:
+                if parent.get_left().get_bf() == -1:  # left right rotation
+                    parent.set_left(self.left_rotation(parent.get_left()))
+                    parent = self.right_rotation(parent)
+                    cnt += 2  # two rotations
+                else:
+                    parent = self.right_rotation(parent)  # right rotation
+                    cnt += 1
 
-            else:
-                if parent.get_bf() == 2:
-                    if parent.get_left().get_bf() == -1:  # left right rotation
-                        parent.set_left(self.left_rotation(parent.get_left()))
-                        parent = self.right_rotation(parent)
-                        cnt += 2  # two rotations
-                    else:
-                        parent = self.right_rotation(parent)  # right rotation
-                        cnt += 1
+            elif parent.get_bf() == -2:
+                if parent.get_right().get_bf() == 1:  # right left rotation
+                    parent.set_right(self.right_rotation(parent.get_right()))
+                    parent = self.left_rotation(parent)
+                    cnt += 2  # two rotations
+                else:  # left rotation
+                    parent = self.left_rotation(parent)
+                    cnt += 1
 
-                elif parent.get_bf() == -2:
-                    if parent.get_right().get_bf() == 1:  # right left rotation
-                        parent.set_right(self.right_rotation(parent.get_right()))
-                        parent = self.left_rotation(parent)
-                        cnt += 2  # two rotations
-                    else:  # left rotation
-                        parent = self.left_rotation(parent)
-                        cnt += 1
-
+            self.reset_height(parent)
             parent = parent.get_parent()
             if parent is None:
                 break
@@ -785,7 +783,7 @@ class AVLTree(object):
 
         if self_is_shorter and self_is_smaller:  # case 1: find minimum of tree
             min_tree = tree.get_root()
-            while min_tree.is_real_node() and min_tree.get_height() != min_height:
+            while min_tree.is_real_node() and min_tree.get_height() > min_height:
                 min_tree = min_tree.get_left()
 
             parent = min_tree.get_parent()
@@ -797,11 +795,14 @@ class AVLTree(object):
             parent.set_left(node)
             node.set_parent(parent)
             self.set_root(tree.get_root())
-            self.recursive_reset(node)
+            # self.recursive_reset(node)
+            self.reset_height(node)
+            self.reset_size(node)
+            node.set_bf()
 
         if self_is_shorter and not self_is_smaller:  # case 2: find maximum of tree
             max_tree = tree.get_root()
-            while max_tree.is_real_node() and max_tree.get_height() != min_height:
+            while max_tree.is_real_node() and max_tree.get_height() > min_height:
                 max_tree = max_tree.get_right()
 
             parent = max_tree.get_parent()
@@ -812,11 +813,14 @@ class AVLTree(object):
             parent.set_right(node)
             node.set_parent(parent)
             self.set_root(tree.get_root())
-            self.recursive_reset(node)
+            # self.recursive_reset(node)
+            self.reset_height(node)
+            self.reset_size(node)
+            node.set_bf()
 
         if not self_is_shorter and self_is_smaller:  # case 3: find maximum of self
             max_self = root
-            while max_self.is_real_node() and max_self.get_height() != min_height:
+            while max_self.is_real_node() and max_self.get_height() > min_height:
                 max_self = max_self.get_right()
 
             parent = max_self.get_parent()
@@ -826,12 +830,15 @@ class AVLTree(object):
             max_self.set_parent(node)
             parent.set_right(node)
             node.set_parent(parent)
-            self.recursive_reset(node)
+            # self.recursive_reset(node)
+            self.reset_height(node)
+            self.reset_size(node)
+            node.set_bf()
 
         if not self_is_shorter and not self_is_smaller:  # case 4: find minimum of self
             min_self = root
 
-            while min_self.is_real_node() and min_self.get_height() >= min_height:
+            while min_self.is_real_node() and min_self.get_height() > min_height:
                 min_self = min_self.get_left()
 
             parent = min_self.get_parent()
@@ -841,43 +848,31 @@ class AVLTree(object):
             min_self.set_parent(node)
             parent.set_left(node)
             node.set_parent(parent)
-            self.recursive_reset(node)
+            #self.recursive_reset(node)
+            self.reset_height(node)
+            self.reset_size(node)
+            node.set_bf()
 
         # balancing the tree
-        delta_height = -1  # height changes after join
         while node is not None:
-            print(self)
-            print(node.get_key(), node.get_bf())
-
-            if -2 < node.get_bf() < 2 and delta_height == 0:
-                if not node.get_parent() or -2 < node.get_parent().get_bf() < 2:
-                    self.recursive_reset(parent)
-                    break
-
             node.set_bf()
             self.reset_size(node)
+            self.reset_height(node)
             if node.get_bf() <= -2:
-                if node.get_right().get_bf() == -1:  # left rotation
+                if node.get_right().get_bf() == -1 or node.get_right().get_bf() == 0:  # left rotation
                     node = self.left_rotation(node)
                 else:  # right_left rotation
                     node.set_right(self.right_rotation(node.get_right()))
                     node = self.left_rotation(node)
             if node.get_bf() >= 2:
-                if node.get_left().get_bf() == 1:  # right rotation
+                if node.get_left().get_bf() == 1 or node.get_left().get_bf() == 0:  # right rotation
                     node = self.right_rotation(node)
 
                 else:  # left_right rotation
                     node.set_left(self.left_rotation(node.get_left()))
                     node = self.right_rotation(node)
 
-            if -2 < node.get_bf() < 2:
-                node = node.get_parent()
-                if node is None:
-                    break
-                prev_height = node.get_height()
-                delta_height = node.get_height() - prev_height
-            self.reset_height(node)
-
+            node = node.get_parent()
         return res
 
     """compute the rank of node in the self
