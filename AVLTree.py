@@ -119,7 +119,6 @@ class AVLNode(object):
     def set_left(self, node):
         if node is None:  # creating virtual children for every node
             self.left = AVLNode(None, None)
-
         self.left = node
         return None
 
@@ -132,7 +131,6 @@ class AVLNode(object):
     def set_right(self, node):
         if node is None:  # creating virtual children for every node
             self.right = AVLNode(None, None)
-
         self.right = node
         return None
 
@@ -194,7 +192,7 @@ class AVLNode(object):
 		@param s: the balance factor
 		"""
 
-    def set_bf(self):
+    def set_bf(self):   #compute the balance factor using height of children
         self.bf = self.get_left().get_height() - self.get_right().get_height()
         return None
 
@@ -227,7 +225,7 @@ class AVLTree(object):
         node = self.get_root()  # bst search starting at the root
         while node.get_key() != key:
             if not node.get_left().is_real_node() and not node.get_right().is_real_node():
-                # we reached a leaf that is different than the required node
+                # we reached a leaf that is different from the required node
                 return None
             elif node.get_key() < key:  # regular bst search pattern
                 node = node.get_right()
@@ -275,7 +273,7 @@ class AVLTree(object):
         else:
             parent.set_right(node)
 
-        node.set_parent(parent)
+        node.set_parent(parent)    #connecting node with the virtual children
         node.set_left(AVLNode(None, None))
         node.set_right(AVLNode(None, None))
         node.get_left().set_parent(node)
@@ -285,7 +283,6 @@ class AVLTree(object):
         self.reset_height(node)
         self.reset_height(parent)
         self.reset_size(parent)
-        #self.recursive_reset()?? or maybe change node height at initialization
 
         return parent.get_height() - prev_height
         # the new height minus the old one and the search counter for the theoretical part
@@ -307,7 +304,7 @@ class AVLTree(object):
     def insert(self, key, val):
         cnt = 0
         node = AVLNode(key, val)  # creating a new node with the given parameters
-        delta_height = self.insert_as_usual(node)  # inserting a leaf
+        delta_height = self.insert_as_usual(node)  # inserting the node as a leaf
         parent = node.get_parent()
 
         while parent is not None:
@@ -698,7 +695,7 @@ class AVLTree(object):
                 node = parent
                 parent = parent.get_parent()
                 right.get_root().set_parent(None)
-                rightTree.join(right, node.get_key(), node.get_value())
+                rightTree.join(right, node.get_key(), node.get_value())  # join right with parent right subtree
 
         return [leftTree, rightTree]
 
