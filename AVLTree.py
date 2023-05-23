@@ -4,9 +4,6 @@
 # id2      - 322430661
 # name2    - Noam Shtrahman
 
-from PrintTreeUtil import *
-
-
 class AVLNode(object):
     """A class representing a node in an AVL tree
 
@@ -958,10 +955,3 @@ class AVLTree(object):
     def set_root(self, node):
         self.root = node
         node.set_parent(None)
-
-    def __repr__(self):  # no need to understand the implementation of this one
-        # return "tree"
-        out = ""
-        for row in printree(self.root):  # need printree.py file
-            out = out + row + "\n"
-        return out
