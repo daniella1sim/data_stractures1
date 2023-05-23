@@ -1,4 +1,4 @@
-# username - simonovsky1
+# username - 
 # id1      - 322721705
 # name1    - Daniella Simonovsky
 # id2      - 322430661
@@ -793,7 +793,6 @@ class AVLTree(object):
             parent.set_left(node)
             node.set_parent(parent)
             self.set_root(tree.get_root())
-            # self.recursive_reset(node)
             self.reset_height(node)
             self.reset_size(node)
             node.set_bf()
@@ -811,7 +810,6 @@ class AVLTree(object):
             parent.set_right(node)
             node.set_parent(parent)
             self.set_root(tree.get_root())
-            # self.recursive_reset(node)
             self.reset_height(node)
             self.reset_size(node)
             node.set_bf()
@@ -828,7 +826,6 @@ class AVLTree(object):
             max_self.set_parent(node)
             parent.set_right(node)
             node.set_parent(parent)
-            # self.recursive_reset(node)
             self.reset_height(node)
             self.reset_size(node)
             node.set_bf()
@@ -846,7 +843,6 @@ class AVLTree(object):
             min_self.set_parent(node)
             parent.set_left(node)
             node.set_parent(parent)
-            # self.recursive_reset(node)
             self.reset_height(node)
             self.reset_size(node)
             node.set_bf()
